@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Person } from '../types/Person';
 import debounce from 'lodash.debounce';
 import classNames from 'classnames';
@@ -18,6 +18,7 @@ export const Dropdown: React.FC<Props> = ({
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const normalizedQuery = debouncedQuery.trim().toLowerCase();
 
@@ -50,8 +51,28 @@ export const Dropdown: React.FC<Props> = ({
     return () => debounced.cancel();
   }, [inputValue, delay]);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsDropdownVisible(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className={classNames('dropdown', { 'is-active': isDropdownVisible })}>
+    <div
+      ref={dropdownRef}
+      className={classNames('dropdown', { 'is-active': isDropdownVisible })}
+    >
       <div className="dropdown-trigger">
         <input
           type="text"
@@ -59,7 +80,6 @@ export const Dropdown: React.FC<Props> = ({
           className="input"
           data-cy="search-input"
           onFocus={() => setIsDropdownVisible(true)}
-          onBlur={() => setIsDropdownVisible(false)}
           onChange={handleInputValueChange}
           value={inputValue}
         />
